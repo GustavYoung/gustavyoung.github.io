@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+
+  <div class="max-w-md mx-auto my-8 p-4 bg-white rounded-lg shadow-lg" id="appContainer">
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold text-blue-800" id="appTitle">Plataforma Logística</h2>
+      <p class="text-gray-500 text-sm" id="userBadge"></p>
+    </div>
+
+    <div id="viewLogin" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Usuario</label>
+        <input type="text" id="txtUsuario" onkeyup="if(event.key === 'Enter') ejecutarLogin()" class="w-full mt-1 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+        <input type="password" id="txtContrasena" onkeyup="if(event.key === 'Enter') ejecutarLogin()" class="w-full mt-1 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <button id="btnIngresar" onclick="ejecutarLogin()" class="w-full bg-blue-600 text-white p-2 rounded-md font-semibold hover:bg-blue-700 transition">Ingresar</button>
+      <p id="loginError" class="text-red-500 text-sm text-center hidden bg-red-50 p-2 rounded border border-red-200"></p>
+    </div>
+
+    <div id="viewOperador" class="hidden space-y-4">
+      <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">Registro de Suministro</h3>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Operativo Asignado</label>
+        <select id="opOperativo" onchange="onChangeOperativo()" class="w-full mt-1 p-2 border rounded-md bg-white"></select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Fecha del Suministro</label>
+        <input type="date" id="opFecha" class="w-full mt-1 p-2 border rounded-md bg-white">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Equipo / Pipa Autorizada</label>
+        <select id="opEquipo" onchange="calcularLitros()" class="w-full mt-1 p-2 border rounded-md bg-white">
+          <option value="">Selecciona primero un operativo</option>
+        </select>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-700 text-blue-800">Cantidad de Viajes</label>
+        <select id="opViajes" onchange="calcularLitros()" class="w-full mt-1 p-2 border rounded-md bg-blue-50 border-blue-200 focus:ring-blue-500 font-semibold">
+          <option value="0.5">0.5 (Medio Viaje)</option>
+          <option value="1" selected>1 Viaje</option>
+          <option value="2">2 Viajes</option>
+          <option value="3">3 Viajes</option>
+          <option value="4">4 Viajes</option>
+          <option value="5">5 Viajes</option>
+          <option value="6">6 Viajes</option>
+          <option value="7">7 Viajes</option>
+          <option value="8">8 Viajes</option>
+          <option value="9">9 Viajes</option>
+          <option value="10">10 Viajes</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Litros Entregados (Cálculo Automático)</label>
+        <input type="text" id="opLitros" readonly class="w-full mt-1 p-2 border rounded-md bg-gray-100 text-gray-600 font-mono cursor-not-allowed" placeholder="0">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Personas Beneficiadas</label>
+        <input type="number" id="opBeneficiados" min="0" placeholder="0" class="w-full mt-1 p-2 border rounded-md">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Ubicación de Entrega</label>
+        <input type="text" id="opUbicacion" class="w-full mt-1 p-2 border rounded-md">
+      </div>
+      
+      <button id="btnEnviarCaptura" onclick="enviarReporte()" class="w-full bg-green-600 text-white p-2 rounded-md font-semibold hover:bg-green-700">Enviar Registro</button>
+      <button onclick="cerrarSesion()" class="w-full bg-gray-400 text-white p-2 rounded-md text-sm">Cerrar Sesión</button>
+    </div>
+
+    <div id="viewOperadorMetricas" class="hidden space-y-6 text-center py-4">
+      <div class="space-y-1">
+        <h3 class="text-2xl font-black text-green-600">¡Gracias por tu labor!</h3>
+        <p class="text-gray-600 text-sm">Tu registro ha sido enviado exitosamente al centro de mando.</p>
+      </div>
+      
+      <div class="grid grid-cols-1 gap-3 text-left">
+        <div class="bg-blue-50 p-4 border border-blue-100 rounded-xl flex justify-between items-center shadow-sm">
+          <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Métricas de Hoy</p><p class="text-2xl font-black text-blue-800 leading-none" id="metVHoy">0 <span class="text-sm font-medium">Viajes</span></p></div>
+          <div class="text-right"><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Volumen</p><p class="text-lg font-bold text-blue-600" id="metLHoy">0 L</p></div>
+        </div>
+        <div class="bg-purple-50 p-4 border border-purple-100 rounded-xl flex justify-between items-center shadow-sm">
+          <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Acumulado Semanal</p><p class="text-2xl font-black text-purple-800 leading-none" id="metVSemana">0 <span class="text-sm font-medium">Viajes</span></p></div>
+          <div class="text-right"><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Volumen</p><p class="text-lg font-bold text-purple-600" id="metLSemana">0 L</p></div>
+        </div>
+        <div class="bg-green-50 p-4 border border-green-100 rounded-xl flex justify-between items-center shadow-sm">
+          <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Total del Operativo</p><p class="text-2xl font-black text-green-800 leading-none" id="metVTotal">0 <span class="text-sm font-medium">Viajes</span></p></div>
+          <div class="text-right"><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Volumen</p><p class="text-lg font-bold text-green-600" id="metLTotal">0 L</p></div>
+        </div>
+      </div>
+
+      <div class="pt-4 space-y-2">
+        <button onclick="nuevoRegistroOperador()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-md">Registrar Viaje Adicional</button>
+        <button onclick="cerrarSesion()" class="w-full text-gray-400 text-sm py-2 hover:text-gray-600 font-medium">Cerrar Sesión Segura</button>
+      </div>
+    </div>
+
+    <div id="viewSupervisor" class="hidden space-y-4">
+      
+      <div class="flex border-b border-gray-200 mb-2 bg-gray-50 rounded-t-md overflow-x-auto">
+        <button onclick="cambiarTab('dashboard')" id="btnTabDashboard" class="py-2 px-4 text-center font-bold text-sm border-b-2 border-blue-600 text-blue-600 focus:outline-none transition whitespace-nowrap">Dashboard</button>
+        <button onclick="cambiarTab('bitacora')" id="btnTabBitacora" class="py-2 px-4 text-center font-bold text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent focus:outline-none transition whitespace-nowrap">Bitácora de Viajes</button>
+        <button onclick="cambiarTab('operativos')" id="btnTabOperativos" class="py-2 px-4 text-center font-bold text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent focus:outline-none transition whitespace-nowrap">Control Operativos</button>
+        <button onclick="cambiarTab('equiposTab')" id="btnTabEquipos" class="hidden py-2 px-4 text-center font-bold text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent focus:outline-none transition whitespace-nowrap">Gestión Equipos</button>
+        <button onclick="cambiarTab('usuarios')" id="btnTabUsuarios" class="hidden py-2 px-4 text-center font-bold text-sm text-gray-500 hover:text-gray-700 border-b-2 border-transparent focus:outline-none transition whitespace-nowrap">Gestión Usuarios</button>
+      </div>
+
+      <div id="secDashboard" class="space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div class="bg-white p-4 border rounded-xl shadow-sm flex flex-col items-center justify-center">
+            <h4 class="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 text-center">Estado de Operativos</h4>
+            <div class="w-full max-w-[130px] h-[130px] relative"><canvas id="chartOperativos"></canvas></div>
+          </div>
+          <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 border border-blue-200 rounded-xl shadow-sm flex flex-col justify-center">
+            <h4 class="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">Volumen Diario</h4>
+            <p class="text-2xl font-black text-blue-900 leading-tight" id="dashLitrosHoy">0</p>
+          </div>
+          <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-5 border border-purple-200 rounded-xl shadow-sm flex flex-col justify-center">
+            <h4 class="text-xs font-bold text-purple-800 uppercase tracking-wider mb-1">Volumen Semanal</h4>
+            <p class="text-2xl font-black text-purple-900 leading-tight" id="dashLitrosSemana">0</p>
+          </div>
+          <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 border border-green-200 rounded-xl shadow-sm flex flex-col justify-center">
+            <h4 class="text-xs font-bold text-green-800 uppercase tracking-wider mb-1">Total Suministrado</h4>
+            <p class="text-2xl font-black text-green-900 leading-tight" id="dashLitrosGlobal">0 L</p>
+          </div>
+          <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-5 border border-amber-200 rounded-xl shadow-sm flex flex-col justify-center">
+            <h4 class="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">Total Beneficiados</h4>
+            <p class="text-2xl font-black text-amber-900 leading-tight" id="dashBeneficiadosGlobal">0</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="text-md font-bold text-gray-800 border-b pb-1 flex items-center"><span class="w-2 h-4 bg-blue-600 rounded-sm mr-2"></span>Estatus de Avance por Línea Operativa</h3>
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold text-green-700 uppercase tracking-wider flex items-center bg-green-50 p-1 rounded border border-green-100">🟢 Operativos Activos</h4>
+            <div id="desgloseActivos" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+          </div>
+          <div class="space-y-2 pt-2">
+            <h4 class="text-xs font-bold text-red-700 uppercase tracking-wider flex items-center bg-red-50 p-1 rounded border border-red-100">🔴 Operativos Finalizados</h4>
+            <div id="desgloseFinalizados" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="secBitacora" class="space-y-4 hidden">
+        <div>
+          <h3 class="text-md font-bold text-gray-700 mb-2">Validación Estructural de Bitácora</h3>
+          <div id="listaViajes" class="space-y-4 max-h-[500px] overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+
+      <div id="secOperativos" class="space-y-6 hidden">
+        <div class="bg-blue-50 p-4 rounded-md border border-blue-200 space-y-3">
+          <h4 class="font-bold text-blue-900 text-sm">Estructurar Nuevo Operativo</h4>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="newOpNombre" placeholder="Nombre Operativo" class="p-2 border rounded text-sm col-span-2">
+            <div>
+              <label class="block text-xs font-medium text-gray-600">Fecha Inicio</label>
+              <input type="date" id="newOpInicio" class="w-full p-1 border rounded text-sm">
+            </div>
+            <div class="flex items-end">
+              <button onclick="crearNuevoOperativo()" class="w-full bg-blue-600 text-white p-2 rounded text-xs font-bold hover:bg-blue-700">Dar de Alta</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-purple-50 p-4 rounded-md border border-purple-200 space-y-3">
+            <h4 class="font-bold text-purple-900 text-sm">Asignación de Personal</h4>
+            <select id="asigOperativo" class="w-full p-2 border rounded text-sm bg-white"><option value="">Seleccione Operativo</option></select>
+            <select id="asigOperador" class="w-full p-2 border rounded text-sm bg-white"><option value="">Seleccione Operador</option></select>
+            <button onclick="vincularOperador()" class="w-full bg-purple-600 text-white p-2 rounded text-xs font-bold hover:bg-purple-700">Vincular Operador</button>
+          </div>
+          <div class="bg-green-50 p-4 rounded-md border border-green-200 space-y-3">
+            <h4 class="font-bold text-green-900 text-sm">Asignación de Recursos / Pipas</h4>
+            <select id="asigEqOperativo" class="w-full p-2 border rounded text-sm bg-white"><option value="">Seleccione Operativo</option></select>
+            <select id="asigEquipo" class="w-full p-2 border rounded text-sm bg-white"><option value="">Seleccione Equipo</option></select>
+            <button onclick="vincularEquipo()" class="w-full bg-green-600 text-white p-2 rounded text-xs font-bold hover:bg-green-700">Vincular Equipo</button>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-md font-bold text-gray-700 mb-2">Panel de Operativos Colectivos (Estado de Fuerza)</h3>
+          <div id="tablaOperativos" class="space-y-3 max-h-64 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <div id="secEquipos" class="space-y-4 hidden">
+        <div class="bg-green-50 p-4 rounded-xl border border-green-200 space-y-3">
+          <h4 class="font-bold text-green-900 text-sm">Dar de Alta Nuevo Equipo / Vehículo</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div><label class="block text-xs font-medium text-gray-600">ID / Económico</label><input type="text" id="newEqId" placeholder="Ej. PIPA-05" class="w-full p-2 border rounded text-sm bg-white mt-1"></div>
+            <div><label class="block text-xs font-medium text-gray-600">Tipo de Equipo</label><input type="text" id="newEqTipo" placeholder="Ej. Pipa de Agua" class="w-full p-2 border rounded text-sm bg-white mt-1"></div>
+            <div><label class="block text-xs font-medium text-gray-600">Capacidad (Litros)</label><input type="number" id="newEqCapacidad" placeholder="Ej. 10000" class="w-full p-2 border rounded text-sm bg-white mt-1"></div>
+            <div><label class="block text-xs font-medium text-gray-600">Placas</label><input type="text" id="newEqPlacas" placeholder="Ej. MX-1234-A" class="w-full p-2 border rounded text-sm bg-white mt-1"></div>
+          </div>
+          <button onclick="registrarNuevoEquipo()" class="w-full bg-green-700 text-white p-2.5 rounded-lg text-xs font-bold hover:bg-green-800 transition shadow-sm">Registrar en Inventario</button>
+        </div>
+        <div>
+          <h3 class="text-md font-bold text-gray-700 mb-2">Inventario General de Equipos</h3>
+          <div id="listaEquiposGestion" class="space-y-2 max-h-64 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <div id="secUsuarios" class="space-y-6 hidden">
+        <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 space-y-3">
+          <h4 class="font-bold text-indigo-900 text-sm">Dar de Alta Nuevo Personal del Sistema</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div><label class="block text-xs font-medium text-gray-600">Usuario (No modificable tras crear)</label><input type="text" id="newUsrLogin" class="w-full p-2 border rounded text-sm bg-white mt-1"></div>
+            <div><label class="block text-xs font-medium text-gray-600">Contraseña</label><input type="password" id="newUsrPass" class="w-full p-2 border rounded text-sm bg-white mt-1"></div>
+            <div><label class="block text-xs font-medium text-gray-600">Nombre Completo</label><input type="text" id="newUsrNombre" class="w-full p-2 border rounded text-sm bg-white mt-1"></div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600">Rol Operativo Asignado</label>
+              <select id="newUsrRol" class="w-full p-2 border rounded text-sm bg-white mt-1"></select>
+            </div>
+          </div>
+          <button onclick="registrarNuevoUsuario()" class="w-full bg-indigo-600 text-white p-2.5 rounded-lg text-xs font-bold hover:bg-indigo-700 transition">Guardar Credenciales</button>
+        </div>
+
+        <div>
+          <h3 class="text-md font-bold text-gray-700 mb-2">Personal y Cuentas Registradas</h3>
+          <div id="listaUsuariosGestion" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+
+      <div class="flex space-x-2 pt-2 border-t">
+        <button onclick="cargarConsolaMando()" class="flex-1 bg-blue-500 text-white p-2 rounded text-sm font-semibold hover:bg-blue-600">Refrescar Datos</button>
+        <button onclick="cerrarSesion()" class="bg-gray-400 text-white p-2 rounded text-sm hover:bg-gray-500">Salir</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let cacheUser = {}; let chartInstance = null; let listaOperativosGlobal = []; let cacheConsolaGlobal = {}; let equiposOperadorGlobal = []; 
+
+    function ejecutarLogin() {
+      const userEl = document.getElementById('txtUsuario'); const passEl = document.getElementById('txtContrasena'); const btnEl = document.getElementById('btnIngresar'); const errorEl = document.getElementById('loginError');
+      if (!userEl || !passEl) return;
+      const user = userEl.value.trim(); const pass = passEl.value.trim();
+      if (errorEl) errorEl.classList.add('hidden');
+      if (!user || !pass) { if (errorEl) { errorEl.innerText = "Ingresa usuario y contraseña."; errorEl.classList.remove('hidden'); } return; }
+      const originalText = btnEl ? btnEl.innerText : 'Ingresar'; if (btnEl) { btnEl.disabled = true; btnEl.innerText = 'Verificando...'; }
+
+      google.script.run
+        .withSuccessHandler(function(response) {
+          if (btnEl) { btnEl.disabled = false; btnEl.innerText = originalText; }
+          if(response.success) {
+            cacheUser = response;
+            document.getElementById('viewLogin').classList.add('hidden');
+            document.getElementById('userBadge').innerText = `${response.nombre} [${response.rol}]`;
+            
+            if(response.rol === 'Operador') {
+              document.getElementById('viewOperador').classList.remove('hidden');
+              actualizarOperativosOperador();
+            } else {
+              document.getElementById('viewSupervisor').classList.remove('hidden');
+              document.getElementById('appContainer').className = "max-w-5xl mx-auto my-6 p-6 bg-white rounded-lg shadow-lg";
+              if (response.rol === 'Administrador' || response.rol === 'Supervisor') document.getElementById('btnTabEquipos').classList.remove('hidden');
+              // ACTUALIZACIÓN: Acceso ampliado a Gerente y Supervisor en la barra de navegación
+              if (response.rol === 'Administrador' || response.rol === 'Gerente' || response.rol === 'Supervisor') document.getElementById('btnTabUsuarios').classList.remove('hidden');
+              cambiarTab('dashboard'); cargarConsolaMando();
+            }
+          } else { if (errorEl) { errorEl.innerText = response.msg; errorEl.classList.remove('hidden'); } }
+        })
+        .withFailureHandler(function(err) { if (btnEl) { btnEl.disabled = false; btnEl.innerText = originalText; } if (errorEl) { errorEl.innerText = "Falla de red: " + err.message; errorEl.classList.remove('hidden'); } })
+        .verificarLogin(user, pass);
+    }
+
+    function cambiarTab(tabName) {
+      const tabs = ['secDashboard', 'secBitacora', 'secOperativos', 'secUsuarios', 'secEquipos'];
+      const btns = ['btnTabDashboard', 'btnTabBitacora', 'btnTabOperativos', 'btnTabUsuarios', 'btnTabEquipos'];
+      tabs.forEach(t => document.getElementById(t).classList.add('hidden'));
+      btns.forEach(b => { document.getElementById(b).classList.remove('border-blue-600', 'text-blue-600'); document.getElementById(b).classList.add('text-gray-500', 'border-transparent'); });
+      let activeSec = 'secDashboard'; let activeBtn = 'btnTabDashboard';
+      if(tabName === 'bitacora') { activeSec = 'secBitacora'; activeBtn = 'btnTabBitacora'; }
+      if(tabName === 'operativos') { activeSec = 'secOperativos'; activeBtn = 'btnTabOperativos'; }
+      if(tabName === 'usuarios') { activeSec = 'secUsuarios'; activeBtn = 'btnTabUsuarios'; ajustarFormAltaUsuarios(); }
+      if(tabName === 'equiposTab') { activeSec = 'secEquipos'; activeBtn = 'btnTabEquipos'; }
+      document.getElementById(activeSec).classList.remove('hidden');
+      document.getElementById(activeBtn).classList.remove('text-gray-500', 'border-transparent');
+      document.getElementById(activeBtn).classList.add('border-blue-600', 'text-blue-600');
+    }
+
+    // ACTUALIZACIÓN: Forzado de restricción en el selector de alta según rol de sesión
+    function ajustarFormAltaUsuarios() {
+      const selectRol = document.getElementById('newUsrRol');
+      if (cacheUser.rol !== 'Administrador') {
+        selectRol.innerHTML = '<option value="Operador">Operador</option>';
+      } else {
+        selectRol.innerHTML = '<option value="Operador">Operador</option><option value="Supervisor">Supervisor</option><option value="Gerente">Gerente</option><option value="Administrador">Administrador</option>';
+      }
+    }
+
+    function onChangeOperativo() { cargarEquiposOperador(); ajustarLimitesFechaOperator(); }
+    function normFechaInput(dateStr) { if(!dateStr) return ""; let soloFecha = dateStr.toString().trim().split(' ')[0]; let componentes = soloFecha.split(/[-/]/); if (componentes.length < 3) return ""; if (componentes[0].length === 4) return `${componentes[0]}-${componentes[1].padStart(2,'0')}-${componentes[2].padStart(2,'0')}`; else return `${componentes[2]}-${componentes[1].padStart(2,'0')}-${componentes[0].padStart(2,'0')}`; }
+
+    function ajustarLimitesFechaOperator() {
+      const idOp = document.getElementById('opOperativo').value; const inputFecha = document.getElementById('opFecha'); if(!idOp) return;
+      const opSeleccionado = listaOperativosGlobal.find(o => o.id === idOp); if(opSeleccionado && opSeleccionado.fechaInicio) inputFecha.min = normFechaInput(opSeleccionado.fechaInicio); 
+      let hoy = new Date().toISOString().split('T')[0]; inputFecha.max = hoy; inputFecha.value = hoy; 
+    }
+
+    function cargarEquiposOperador() {
+      const idOp = document.getElementById('opOperativo').value; const selectEq = document.getElementById('opEquipo'); selectEq.innerHTML = '<option>Buscando equipos...</option>'; if(!idOp) { selectEq.innerHTML = '<option value="">Selecciona operativo</option>'; return; }
+      google.script.run.withSuccessHandler(function(equipos) { equiposOperadorGlobal = equipos; selectEq.innerHTML = ''; if(equipos.length === 0) { selectEq.innerHTML = '<option value="">SIN EQUIPOS ASIGNADOS ACTIVOS</option>'; return; } equipos.forEach(eq => { selectEq.innerHTML += `<option value="${eq.id}">${eq.id}</option>`; }); calcularLitros(); }).obtenerEquiposAsignadosAOperativo(idOp);
+    }
+
+    function calcularLitros() {
+      const idEq = document.getElementById('opEquipo').value; const multiplicador = parseFloat(document.getElementById('opViajes').value) || 0; const inputLitros = document.getElementById('opLitros');
+      const equipoSeleccionado = equiposOperadorGlobal.find(e => e.id === idEq); if (equipoSeleccionado && equipoSeleccionado.capacidad) inputLitros.value = equipoSeleccionado.capacidad * multiplicador; else inputLitros.value = 0;
+    }
+
+    function actualizarOperativosOperador() {
+      const select = document.getElementById('opOperativo'); select.innerHTML = '<option>Buscando operativos...</option>';
+      google.script.run.withSuccessHandler(function(listado) { select.innerHTML = ''; listaOperativosGlobal = listado; if(listado.length === 0) { select.innerHTML = '<option value="">SIN OPERATIVOS ASIGNADOS ACTIVOS</option>'; return; } listado.forEach(op => { select.innerHTML += `<option value="${op.id}">${op.nombre}</option>`; }); onChangeOperativo(); }).obtenerOperativosDisponibles(cacheUser.usuario);
+    }
+
+    function enviarReporte() {
+      const inputFecha = document.getElementById('opFecha'); const btn = document.getElementById('btnEnviarCaptura');
+      const datos = { operador: cacheUser.nombre, idOperativo: document.getElementById('opOperativo').value, equipo: document.getElementById('opEquipo').value, litros: document.getElementById('opLitros').value, fecha: inputFecha.value, beneficiados: document.getElementById('opBeneficiados').value, ubicacion: document.getElementById('opUbicacion').value };
+      if(!datos.idOperativo || !datos.equipo || !datos.litros || !datos.fecha || !datos.beneficiados) return alert("Por favor completa todos los campos del formulario.");
+      if (inputFecha.min && datos.fecha < inputFecha.min) return alert("Acción Cancelada: Fecha anterior al inicio.");
+      if (inputFecha.max && datos.fecha > inputFecha.max) return alert("Acción Cancelada: No se admiten fechas futuras.");
+      if (Number(datos.litros) <= 0) return alert("El equipo seleccionado no tiene capacidad registrada en sistema. Contacta al supervisor.");
+      btn.disabled = true; btn.innerText = "Registrando...";
+
+      google.script.run.withSuccessHandler(function(res) {
+        btn.disabled = false; btn.innerText = "Enviar Registro";
+        if(res.success) {
+          document.getElementById('viewOperador').classList.add('hidden');
+          document.getElementById('metVHoy').innerHTML = `${res.metricas.vHoy} <span class="text-sm font-medium">Viajes</span>`; document.getElementById('metLHoy').innerText = `${res.metricas.lHoy.toLocaleString()} L`;
+          document.getElementById('metVSemana').innerHTML = `${res.metricas.vSemana} <span class="text-sm font-medium">Viajes</span>`; document.getElementById('metLSemana').innerText = `${res.metricas.lSemana.toLocaleString()} L`;
+          document.getElementById('metVTotal').innerHTML = `${res.metricas.vTotal} <span class="text-sm font-medium">Viajes</span>`; document.getElementById('metLTotal').innerText = `${res.metricas.lTotal.toLocaleString()} L`;
+          document.getElementById('viewOperadorMetricas').classList.remove('hidden');
+        } else { alert("Error en Servidor: " + res.msg); }
+      }).registrarViaje(datos);
+    }
+
+    function nuevoRegistroOperador() { document.getElementById('viewOperadorMetricas').classList.add('hidden'); document.getElementById('opBeneficiados').value = ''; document.getElementById('opUbicacion').value = ''; document.getElementById('opViajes').value = '1'; calcularLitros(); document.getElementById('viewOperador').classList.remove('hidden'); }
+    function mostrarFormRechazoInline(idViaje) { document.getElementById(`formRechazo_${idViaje}`).classList.remove('hidden'); }
+    function ocultarFormRechazoInline(idViaje) { document.getElementById(`formRechazo_${idViaje}`).classList.add('hidden'); document.getElementById(`inputRechazo_${idViaje}`).value = ''; }
+    function ejecutarRechazoInline(idViaje) { const motivoInput = document.getElementById(`inputRechazo_${idViaje}`); if(!motivoInput || motivoInput.value.trim() === "") return alert("Indique motivo."); google.script.run.withSuccessHandler(function(res) { if(res.success) { alert("Rechazado."); cargarConsolaMando(); } }).actualizarEstatusViaje(idViaje, 'Rechazado', cacheUser.nombre, cacheUser.rol, motivoInput.value.trim()); }
+    function ejecutarCierreInline(idOp) { const dateInput = document.getElementById(`clFecha_${idOp}`); if(!dateInput || !dateInput.value) return alert("Seleccione fecha."); google.script.run.withSuccessHandler(function(res) { if(res.success) { alert("Operativo archivado."); cargarConsolaMando(); } }).cambiarEstatusOperativo(idOp, 'Finalizado', dateInput.value, cacheUser.rol); }
+    function ejecutarReactivacionInline(idOp) { google.script.run.withSuccessHandler(function(res) { if(res.success){alert("Reactivado.");cargarConsolaMando();} }).cambiarEstatusOperativo(idOp, 'Activo', '', cacheUser.rol); }
+    function validarViaje(idViaje, estatus) { google.script.run.withSuccessHandler(function(res) { if(res.success){alert("Aprobado.");cargarConsolaMando();} }).actualizarEstatusViaje(idViaje, estatus, cacheUser.nombre, cacheUser.rol, ""); }
+
+    function descargarReporteOperativo(idOp) {
+      const btn = event.currentTarget; const textoOriginal = btn.innerHTML;
+      btn.innerHTML = `<svg class="animate-spin w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Procesando...</span>`; btn.disabled = true;
+      google.script.run.withSuccessHandler(function(res) {
+          if(res.success) { btn.outerHTML = `<a href="${res.url}" target="_blank" class="flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded-md text-[11px] font-bold border border-green-200 hover:bg-green-100 transition shadow-2xs"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg><span>¡Listo! Abrir Reporte</span></a>`; } else { btn.innerHTML = textoOriginal; btn.disabled = false; alert("Error: " + res.msg); }
+        }).withFailureHandler(function(err) { btn.innerHTML = textoOriginal; btn.disabled = false; alert("Error: " + err.message); }).generarReporteInstitucional(idOp);
+    }
+
+    function registrarNuevoEquipo() {
+      const datos = { id: document.getElementById('newEqId').value, tipo: document.getElementById('newEqTipo').value, capacidad: document.getElementById('newEqCapacidad').value, placas: document.getElementById('newEqPlacas').value }; if(!datos.id || !datos.tipo) return alert("Faltan datos.");
+      google.script.run.withSuccessHandler(function(res) { if(res.success) { alert("Equipo catalogado."); document.getElementById('newEqId').value=''; document.getElementById('newEqTipo').value=''; document.getElementById('newEqCapacidad').value=''; document.getElementById('newEqPlacas').value=''; cargarConsolaMando(); } }).registrarNuevoEquipoEnSheet(datos, cacheUser.rol);
+    }
+
+    function cambiarEstadoEquipo(idEquipo, nuevoEstado) { google.script.run.withSuccessHandler(function(res) { cargarConsolaMando(); }).cambiarEstatusEquipoEnSheet(idEquipo, nuevoEstado, cacheUser.rol); }
+    function vincularEquipo() { const idOp = document.getElementById('asigEqOperativo').value; const idEq = document.getElementById('asigEquipo').value; google.script.run.withSuccessHandler(function(res) { alert("Vinculado."); cargarConsolaMando(); }).asignarEquipoAOperativo(idOp, idEq, cacheUser.rol); }
+    function crearNuevoOperativo() { const n = document.getElementById('newOpNombre').value; const f = document.getElementById('newOpInicio').value; google.script.run.withSuccessHandler(function(res) { if(res.success){alert("Creado."); cargarConsolaMando(); } }).crearOperativo(n, f, cacheUser.rol); }
+    function vincularOperador() { const idOp = document.getElementById('asigOperativo').value; const opUser = document.getElementById('asigOperador').value; google.script.run.withSuccessHandler(function(res) { alert("Asignado."); cargarConsolaMando(); }).asignarOperadorAOperativo(idOp, opUser, cacheUser.rol); }
+    
+    function registrarNuevoUsuario() {
+      const datos = { usuario: document.getElementById('newUsrLogin').value, contrasena: document.getElementById('newUsrPass').value, nombre: document.getElementById('newUsrNombre').value, rol: document.getElementById('newUsrRol').value };
+      if (!datos.usuario || !datos.contrasena || !datos.nombre) return alert("Llena todos los campos.");
+      google.script.run.withSuccessHandler(function(res) { if (res.success) { alert("Usuario guardado con éxito."); document.getElementById('newUsrLogin').value = ''; document.getElementById('newUsrPass').value = ''; document.getElementById('newUsrNombre').value = ''; cargarConsolaMando(); } else { alert("Error: " + res.msg); } }).registrarNuevoUsuarioEnSheet(datos, cacheUser.rol);
+    }
+
+    // NUEVA FUNCIÓN FRONTEND: Envío de actualizaciones de perfil al servidor
+    function guardarCambiosUsuario(username, originalRol) {
+      const selectRolEl = document.getElementById(`editUsrRol_${username}`);
+      const nuevoRol = selectRolEl ? selectRolEl.value : originalRol;
+      
+      const datos = {
+        usuario: username,
+        contrasena: document.getElementById(`editUsrPass_${username}`).value.trim(),
+        nombre: document.getElementById(`editUsrNombre_${username}`).value.trim(),
+        rol: nuevoRol
+      };
+      
+      if (!datos.contrasena || !datos.nombre) return alert("El nombre completo y la contraseña son requeridos.");
+
+      google.script.run.withSuccessHandler(function(res) {
+        if (res.success) {
+          alert("Datos actualizados correctamente en la base central.");
+          if (username === cacheUser.usuario) {
+            cacheUser.nombre = datos.nombre;
+            document.getElementById('userBadge').innerText = `${datos.nombre} [${cacheUser.rol}]`;
+          }
+          cargarConsolaMando();
+        } else { alert("Error: " + res.msg); }
+      }).actualizarUsuarioEnSheet(datos, cacheUser.rol, cacheUser.usuario);
+    }
+
+    // NUEVA FUNCIÓN FRONTEND: Disparador de borrado condicionado
+    function eliminarUsuario(username) {
+      if (!confirm(`¿Estás seguro de eliminar permanentemente el usuario "${username}"? Esta acción audita la bitácora automáticamente.`)) return;
+      google.script.run.withSuccessHandler(function(res) {
+        if (res.success) { alert("Usuario removido del sistema."); cargarConsolaMando(); } else { alert("Aviso del Sistema: " + res.msg); }
+      }).eliminarUsuarioEnSheet(username, cacheUser.rol);
+    }
+
+    function mapearFechaSheet(dateStr) {
+      if (!dateStr) return null; let soloFecha = dateStr.toString().trim().split(' ')[0]; let comp = soloFecha.split(/[-/]/); if (comp.length < 3) return null;
+      let d, m, y; if (comp[0].length === 4) { y = parseInt(comp[0], 10); m = parseInt(comp[1], 10) - 1; d = parseInt(comp[2], 10); } else { d = parseInt(comp[0], 10); m = parseInt(comp[1], 10) - 1; y = parseInt(comp[2], 10); } return new Date(y, m, d);
+    }
+
+    function cargarConsolaMando() {
+      google.script.run.withSuccessHandler(function(datos) {
+        cacheConsolaGlobal = datos; 
+        let operativosActivos = 0, operativosFinalizados = 0, litrosHoy = 0, litrosSemana = 0; let totalLitrosGlobal = 0, totalBeneficiadosGlobal = 0; let opMap = {};
+
+        datos.operativos.forEach(op => {
+          let estatus = op[4].toString().trim(); if (estatus === 'Activo') operativosActivos++; if (estatus === 'Finalizado') operativosFinalizados++;
+          opMap[op[0].toString().trim()] = { nombre: op[1], estatus: estatus, fechaInicio: op[2], fechaFin: op[3], totalLitros: 0, totalBeneficiados: 0, ubicacionesHoy: [], diasOperadosSet: new Set() };
+        });
+
+        let tHoy = new Date(); tHoy.setHours(0,0,0,0);
+        let tSemana = new Date(tHoy); tSemana.setDate(tSemana.getDate() - tSemana.getDay()); tSemana.setHours(0,0,0,0);
+
+        datos.bitacora.forEach(viaje => {
+          let idOp = viaje[9].toString().trim(); let estatusViaje = viaje[7].toString().trim(); let litros = Number(viaje[4]) || 0; let beneficiados = Number(viaje[5]) || 0; let ubicacion = viaje[6] ? viaje[6].toString().trim() : '';
+          let fViaje = mapearFechaSheet(viaje[1]); let soloFecha = viaje[1] ? viaje[1].toString().trim().split(' ')[0] : '';
+
+          if (estatusViaje === 'Rechazado') return;
+          if (estatusViaje === 'Aprobado' && opMap[idOp] && soloFecha) opMap[idOp].diasOperadosSet.add(soloFecha);
+          if (opMap[idOp]) { opMap[idOp].totalLitros += litros; opMap[idOp].totalBeneficiados += beneficiados; }
+          totalLitrosGlobal += litros; totalBeneficiadosGlobal += beneficiados;
+
+          if (fViaje) {
+            fViaje.setHours(0,0,0,0);
+            if (fViaje.getTime() === tHoy.getTime()) { litrosHoy += litros; if (opMap[idOp] && ubicacion && !opMap[idOp].ubicacionesHoy.includes(ubicacion)) opMap[idOp].ubicacionesHoy.push(ubicacion); }
+            if (fViaje.getTime() >= tSemana.getTime() && fViaje.getTime() <= tHoy.getTime()) litrosSemana += litros;
+          }
+        });
+
+        document.getElementById('dashLitrosHoy').innerText = litrosHoy.toLocaleString() + " L"; document.getElementById('dashLitrosSemana').innerText = litrosSemana.toLocaleString() + " L"; document.getElementById('dashLitrosGlobal').innerText = totalLitrosGlobal.toLocaleString() + " L"; document.getElementById('dashBeneficiadosGlobal').innerText = totalBeneficiadosGlobal.toLocaleString();
+
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(document.getElementById('chartOperativos').getContext('2d'), { type: 'doughnut', data: { labels: ['Activos', 'Finalizados'], datasets: [{ data: [operativosActivos, operativosFinalizados], backgroundColor: ['#16a34a', '#dc2626'], borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+
+        const contActivos = document.getElementById('desgloseActivos'); const contFinalizados = document.getElementById('desgloseFinalizados'); contActivos.innerHTML = ''; contFinalizados.innerHTML = '';
+
+        Object.keys(opMap).forEach(key => {
+          let op = opMap[key]; let badgUbicaciones = op.ubicacionesHoy.length > 0 ? op.ubicacionesHoy.map(loc => `<span class="bg-blue-100 text-blue-800 text-[11px] font-medium px-2 py-0.5 rounded border border-blue-200">${loc}</span>`).join(' ') : `<span class="text-gray-400 italic text-xs">Sin operaciones hoy</span>`;
+          let fechasHtml = '';
+          if(op.estatus === 'Activo') { fechasHtml = `<div class="pt-2 border-t text-xs text-gray-600"><p>📅 <strong>Fecha de Inicio:</strong> ${op.fechaInicio || 'N/A'}</p></div>`; } else {
+            let dIni = mapearFechaSheet(op.fechaInicio); let dFin = mapearFechaSheet(op.fechaFin); let diasNaturales = 0;
+            if(dIni && dFin) { dIni.setHours(0,0,0,0); dFin.setHours(0,0,0,0); diasNaturales = Math.ceil(Math.abs(dFin - dIni) / (1000 * 60 * 60 * 24)) + 1; }
+            fechasHtml = `<div class="pt-2 border-t text-xs text-gray-600 space-y-1"><div class="grid grid-cols-2 gap-1"><p>📅 <strong>Inicio:</strong> ${op.fechaInicio || 'N/A'}</p><p>🏁 <strong>Término:</strong> ${op.fechaFin || 'N/A'}</p></div><div class="bg-blue-50 p-1.5 rounded border border-blue-100 text-[11px] font-medium text-blue-900 grid grid-cols-2 text-center mt-1"><p>⏳ <strong>Días Naturales:</strong> ${diasNaturales}</p><p>🚛 <strong>Días Operados:</strong> ${op.diasOperadosSet.size}</p></div></div>`;
+          }
+
+          let cardHtml = `<div class="bg-white p-4 border rounded-xl shadow-sm flex flex-col justify-between space-y-3"><div><div class="flex justify-between items-start gap-2 border-b pb-1.5"><div><h4 class="text-base font-bold text-gray-800 leading-tight">${op.nombre}</h4><p class="text-[10px] text-gray-400 font-mono mt-0.5">ID: ${key}</p></div><button onclick="descargarReporteOperativo('${key}')" title="Descargar Historial" class="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-[11px] font-bold border border-blue-200 hover:bg-blue-100 transition shadow-2xs"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg><span>Bitácora</span></button></div><div class="grid grid-cols-2 gap-2 text-center mt-2.5"><div class="bg-gray-50 p-2 rounded-lg border border-gray-100"><p class="text-[10px] uppercase font-bold text-gray-400">Litros</p><p class="text-lg font-black text-blue-700">${op.totalLitros.toLocaleString()}</p></div><div class="bg-gray-50 p-2 rounded-lg border border-gray-100"><p class="text-[10px] uppercase font-bold text-gray-400">Beneficiados</p><p class="text-lg font-black text-purple-700">${op.totalBeneficiados.toLocaleString()}</p></div></div></div><div class="space-y-2">${op.estatus === 'Activo' ? `<div><p class="text-xs font-bold text-gray-500 mb-1">Sectores Atendidos Hoy:</p><div class="flex flex-wrap gap-1">${badgUbicaciones}</div></div>` : ''}${fechasHtml}</div></div>`;
+          if(op.estatus === 'Activo') contActivos.innerHTML += cardHtml; else contFinalizados.innerHTML += cardHtml;
+        });
+
+        if(contActivos.innerHTML === '') contActivos.innerHTML = '<p class="text-gray-400 italic text-xs col-span-2">No hay líneas activas.</p>';
+        if(contFinalizados.innerHTML === '') contFinalizados.innerHTML = '<p class="text-gray-400 italic text-xs col-span-2">Sin operativos cerrados.</p>';
+
+        const selOp = document.getElementById('asigOperativo'); const selEqOp = document.getElementById('asigEqOperativo'); const tOps = document.getElementById('tablaOperativos'); tOps.innerHTML = ''; selOp.innerHTML = '<option value="">Seleccione Operativo</option>'; selEqOp.innerHTML = '<option value="">Seleccione Operativo</option>';
+        
+        datos.operativos.forEach(op => {
+          let id = op[0].toString().trim(); let name = op[1]; let estatus = op[4].toString().trim();
+          if(estatus === 'Activo') { selOp.innerHTML += `<option value="${id}">${name}</option>`; selEqOp.innerHTML += `<option value="${id}">${name}</option>`; }
+          let opsAsignados = datos.asignaciones_ops.filter(a => a[0].toString().trim() === id).map(a => { var u = datos.usuarios.find(usr => usr[0].toString().trim() === a[1].toString().trim()); return u ? u[3] : a[1]; });
+          let eqsAsignados = datos.asignaciones_eqs.filter(a => a[0].toString().trim() === id).map(a => a[1].toString().trim());
+          let controlEstatusHtml = estatus === 'Activo' ? `<div class="mt-2.5 bg-white p-2 rounded-lg border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs"><div class="flex flex-col flex-1"><label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Fecha Término:</label><input type="date" id="clFecha_${id}" value="${new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" class="p-1 border rounded text-xs bg-gray-50 font-mono"></div><button onclick="ejecutarCierreInline('${id}')" class="bg-red-500 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-red-600 transition self-end">Concluir</button></div>` : `<div class="mt-2 flex justify-end"><button onclick="ejecutarReactivacionInline('${id}')" class="bg-orange-500 text-white px-3 py-1 rounded text-xs hover:bg-orange-600 font-semibold transition">Reactivar (Admin)</button></div>`;
+          tOps.innerHTML += `<div class="p-3 bg-gray-50 border rounded-xl text-xs shadow-sm space-y-1"><div class="flex justify-between items-center border-b pb-1"><div><p class="font-bold text-gray-800 text-sm">${name}</p><p class="text-gray-400 text-[10px] font-mono">ID: ${id} [${estatus}]</p></div></div><p class="pt-1"><span class="font-bold text-purple-900">Operadores:</span> <span class="text-gray-700">${opsAsignados.join(', ') || 'Sin personal'}</span></p><p><span class="font-bold text-green-900">Equipos:</span> <span class="text-gray-700">${eqsAsignados.join(', ') || 'Sin pipas'}</span></p>${controlEstatusHtml}</div>`;
+        });
+
+        const listaEqGestion = document.getElementById('listaEquiposGestion'); listaEqGestion.innerHTML = ''; const selEq = document.getElementById('asigEquipo'); selEq.innerHTML = '<option value="">Seleccione Equipo</option>';
+        datos.equipos.forEach(eq => {
+          let id = eq[0].toString().trim(); let cap = eq[1]; let placas = eq[2]; let tipo = eq[3]; let estado = eq[4].toString().trim();
+          if(estado === 'Activo') selEq.innerHTML += `<option value="${id}">${id} (${tipo})</option>`;
+          let btnToggle = estado === 'Activo' ? `<button onclick="cambiarEstadoEquipo('${id}', 'Inactivo')" class="bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">Desactivar</button>` : `<button onclick="cambiarEstadoEquipo('${id}', 'Activo')" class="bg-green-600 text-white px-2 py-1 rounded text-xs font-semibold">Activar</button>`;
+          listaEqGestion.innerHTML += `<div class="flex justify-between items-center p-2.5 bg-gray-50 border rounded-lg text-xs shadow-sm"><div><p class="font-bold text-gray-800">${id} — <span class="text-gray-500 font-normal">${tipo}</span></p><p class="text-gray-400 text-[11px] mt-0.5">Placas: ${placas || 'N/A'} | Cap: ${cap ? cap + ' L' : 'N/A'} | Estado: <span class="${estado==='Activo'?'text-green-600 font-bold':'text-red-500'}">${estado}</span></p></div><div>${btnToggle}</div></div>`;
+        });
+
+        const selUser = document.getElementById('asigOperador'); selUser.innerHTML = '<option value="">Seleccione Operador</option>';
+        datos.usuarios.forEach(u => { if(u[2].toString().trim() === 'Operador') selUser.innerHTML += `<option value="${u[0]}">${u[3]}</option>`; });
+
+        // ACTUALIZACIÓN: Renderizado Dinámico y Seguro de la sección de Usuarios
+        const listaUsrCont = document.getElementById('listaUsuariosGestion');
+        if (listaUsrCont) {
+          listaUsrCont.innerHTML = '';
+          datos.usuarios.forEach(u => {
+            let username = u[0].toString().trim(); let pass = u[1].toString().trim(); let rol = u[2].toString().trim(); let nombre = u[3].toString().trim();
+
+            // Filtro de Vista de Jerarquía para Gerente y Supervisor
+            if (cacheUser.rol !== 'Administrador') {
+              if (username !== cacheUser.usuario && rol !== 'Operador') return;
+            }
+
+            let esPropioUsuario = (username === cacheUser.usuario);
+            let puedeCambiarRol = (cacheUser.rol === 'Administrador' && !esPropioUsuario);
+            
+            let opcionesRolHtml = '';
+            if (puedeCambiarRol) {
+              opcionesRolHtml = `
+                <select id="editUsrRol_${username}" class="p-1 border rounded text-xs bg-white font-semibold">
+                  <option value="Operador" ${rol==='Operador'?'selected':''}>Operador</option>
+                  <option value="Supervisor" ${rol==='Supervisor'?'selected':''}>Supervisor</option>
+                  <option value="Gerente" ${rol==='Gerente'?'selected':''}>Gerente</option>
+                  <option value="Administrador" ${rol==='Administrador'?'selected':''}>Administrador</option>
+                </select>`;
+            } else {
+              opcionesRolHtml = `<span class="bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded text-[10px] font-bold border border-indigo-200">${rol}</span>`;
+            }
+
+            let btnEliminarHtml = '';
+            if (!esPropioUsuario && (cacheUser.rol === 'Administrador' || rol === 'Operador')) {
+              btnEliminarHtml = `<button onclick="eliminarUsuario('${username}')" class="bg-red-500 text-white px-2.5 py-1 rounded text-xs font-bold hover:bg-red-600 transition">Eliminar</button>`;
+            }
+
+            listaUsrCont.innerHTML += `
+              <div class="p-3 bg-gray-50 border rounded-xl shadow-xs space-y-2">
+                <div class="flex justify-between items-center border-b pb-1.5">
+                  <div>
+                    <span class="font-mono font-bold text-blue-900 text-sm bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">${username}</span>
+                    ${esPropioUsuario ? '<span class="bg-green-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded ml-1.5 tracking-wide">TÚ (SESIÓN)</span>' : ''}
+                  </div>
+                  <div>${opcionesRolHtml}</div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[10px] uppercase font-bold text-gray-400">Nombre Completo</label>
+                    <input type="text" id="editUsrNombre_${username}" value="${nombre}" class="w-full p-1.5 border rounded text-xs bg-white mt-0.5 font-medium">
+                  </div>
+                  <div>
+                    <label class="block text-[10px] uppercase font-bold text-gray-400">Contraseña</label>
+                    <input type="text" id="editUsrPass_${username}" value="${pass}" class="w-full p-1.5 border rounded text-xs bg-white mt-0.5 font-mono">
+                  </div>
+                </div>
+                <div class="flex justify-end gap-1.5 pt-1">
+                  ${btnEliminarHtml}
+                  <button onclick="guardarCambiosUsuario('${username}', '${rol}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-indigo-700 transition">Guardar Cambios</button>
+                </div>
+              </div>`;
+          });
+        }
+
+        const listaV = document.getElementById('listaViajes'); listaV.innerHTML = ''; let bitacoraAgrupada = {};
+        datos.bitacora.forEach(viaje => { let idOp = viaje[9].toString().trim(); let soloFecha = viaje[1].toString().trim().split(' ')[0] || "Sin Fecha"; if (!bitacoraAgrupada[idOp]) bitacoraAgrupada[idOp] = {}; if (!bitacoraAgrupada[idOp][soloFecha]) bitacoraAgrupada[idOp][soloFecha] = []; bitacoraAgrupada[idOp][soloFecha].push(viaje); });
+
+        let htmlAcumulado = '';
+        Object.keys(bitacoraAgrupada).forEach(idOp => {
+          htmlAcumulado += `<div class="border border-gray-300 rounded-xl overflow-hidden shadow-sm"><div class="bg-slate-800 text-white p-3 font-bold text-sm flex justify-between items-center"><span>📋 Operativo: ${opMap[idOp] ? opMap[idOp].nombre : idOp}</span><span class="text-[10px] bg-slate-700 px-2 py-0.5 rounded font-mono">ID: ${idOp}</span></div><div class="p-3 bg-white space-y-4">`;
+          Object.keys(bitacoraAgrupada[idOp]).forEach(fecha => {
+            htmlAcumulado += `<div class="space-y-2"><div class="text-xs font-bold text-blue-800 bg-blue-50 p-1.5 rounded flex justify-between items-center"><span>📅 Jornada: ${fecha}</span><span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-semibold">${bitacoraAgrupada[idOp][fecha].length} Reg.</span></div><div class="space-y-2 pl-3 border-l-2 border-blue-200">`;
+            bitacoraAgrupada[idOp][fecha].forEach(viaje => {
+              let estatus = viaje[7].toString().trim(); let motivoRechazo = viaje[10] ? viaje[10].toString().trim() : ''; let badgeExt = viaje[11].toString().trim() === 'Extemporáneo' ? `<span class="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[10px] border border-amber-200 font-bold ml-1">⏳ Extemporáneo</span>` : '';
+              let btns = estatus === 'Pendiente' ? `<div class="mt-2 space-y-2"><div class="flex space-x-2"><button onclick="validarViaje('${viaje[0]}', 'Aprobado')" class="bg-green-500 text-white px-2.5 py-1 rounded text-xs font-bold hover:bg-green-600 shadow-xs">Aprobar</button><button onclick="mostrarFormRechazoInline('${viaje[0]}')" class="bg-red-500 text-white px-2.5 py-1 rounded text-xs font-bold hover:bg-red-600 shadow-xs">Rechazar...</button></div><div id="formRechazo_${viaje[0]}" class="hidden bg-red-50 p-2 rounded border border-red-200 space-y-2"><input type="text" id="inputRechazo_${viaje[0]}" placeholder="Motivo de rechazo" class="w-full p-1.5 border border-red-300 rounded text-xs"><div class="flex justify-end space-x-1"><button onclick="ocultarFormRechazoInline('${viaje[0]}')" class="bg-gray-400 text-white px-2 py-0.5 rounded text-[10px]">Cancelar</button><button onclick="ejecutarRechazoInline('${viaje[0]}')" class="bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">Confirmar</button></div></div></div>` : '';
+              htmlAcumulado += `<div class="p-2.5 bg-gray-50 border rounded-lg text-xs shadow-xs"><div class="flex justify-between font-bold items-center"><div class="flex items-center text-gray-700"><span>Folio: ${viaje[0]} | Unidad: ${viaje[3]}</span> ${badgeExt}</div><span class="px-2 py-0.5 rounded text-[10px] ${estatus==='Aprobado'?'bg-green-100 text-green-800':estatus==='Rechazado'?'bg-red-100 text-red-800':'bg-yellow-100 text-yellow-800'}">${estatus}</span></div><p class="mt-1"><span class="font-medium text-gray-500">Operador:</span> ${viaje[2]} | <span class="font-medium text-gray-500">Volumen:</span> ${Number(viaje[4]).toLocaleString()} L | <span class="font-medium text-gray-500">Benéf:</span> ${Number(viaje[5]).toLocaleString()}</p><p class="text-gray-600"><span class="font-medium text-gray-500">Lugar:</span> ${viaje[6]}</p>${viaje[8] ? `<p class="italic text-gray-400 text-[10px] mt-1">Validó: ${viaje[8]}</p>` : ''}${estatus === 'Rechazado' && motivoRechazo ? `<div class="mt-2 text-red-700 bg-red-50 p-2 rounded border border-red-100 font-medium text-[11px]"><span class="font-bold">⚠️ Motivo:</span> ${motivoRechazo}</div>` : ''}${btns}</div>`;
+            });
+            htmlAcumulado += `</div></div>`;
+          });
+          htmlAcumulado += `</div></div>`;
+        });
+        listaV.innerHTML = htmlAcumulado || '<p class="text-gray-400 text-center text-xs py-4">Sin registros.</p>';
+      }).obtenerDatosConsola();
+    }
+
+    function cerrarSesion() {
+      cacheUser = {}; if(chartInstance) chartInstance.destroy();
+      document.getElementById('viewOperadorMetricas').classList.add('hidden');
+      document.getElementById('btnTabUsuarios').classList.add('hidden');
+      document.getElementById('btnTabEquipos').classList.add('hidden');
+      document.getElementById('viewOperador').classList.add('hidden');
+      document.getElementById('viewSupervisor').classList.add('hidden');
+      document.getElementById('appContainer').className = "max-w-md mx-auto my-8 p-4 bg-white rounded-lg shadow-lg";
+      document.getElementById('txtUsuario').value = ''; document.getElementById('txtContrasena').value = '';
+      document.getElementById('viewLogin').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
