@@ -142,11 +142,12 @@
       try {
         const response = await fetch(FINAL_URL, {
           method: 'POST',
-          headers: { 
-          'Content-Type': 'application/json' 
-          },
-          body: JSON.stringify({ action: action, payload: payload })
-        });
+          headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      // Google Apps Script a veces lee mejor los datos si van como string plano
+      body: JSON.stringify({ action: action, payload: payload })
+    });
     
         return await response.json();
       } catch (err) {
