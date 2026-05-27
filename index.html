@@ -134,25 +134,25 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbxAI4MJl1apZOnv9WJIT7vyLl8ON9e1npoyJteD1Np_8JjH-ux8gIbu1vXXHOSHpf3jGQ/exec"; 
     
     // EL MOTOR FETCH (El nuevo puente de comunicación)
-  async function api(action, payload = {}) {
-  // Aquí insertamos la URL del proxy delante de tu URL original
-    const PROXY_URL = 'https://corsproxy.io/?';
-    const FINAL_URL = PROXY_URL + encodeURIComponent(API_URL);
+    async function api(action, payload = {}) {
+    // Aquí insertamos la URL del proxy delante de tu URL original
+      const PROXY_URL = 'https://corsproxy.io?url=';
+      const FINAL_URL = PROXY_URL + encodeURIComponent(API_URL);
 
-    try {
-      const response = await fetch(FINAL_URL, {
-        method: 'POST',
-        headers: { 
+      try {
+        const response = await fetch(FINAL_URL, {
+          method: 'POST',
+          headers: { 
           'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({ action: action, payload: payload })
-      });
+          },
+          body: JSON.stringify({ action: action, payload: payload })
+        });
     
-      return await response.json();
-    } catch (err) {
-      console.error("Error al conectar con el proxy:", err);
-      throw err;
-    }
+        return await response.json();
+      } catch (err) {
+        console.error("Error al conectar con el proxy:", err);
+        throw err;
+      }
   }
 
     let cacheUser = {}; let chartInstance = null; let listaOperativosGlobal = []; let cacheConsolaGlobal = {}; let equiposOperadorGlobal = []; 
