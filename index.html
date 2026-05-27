@@ -136,7 +136,7 @@
     // EL MOTOR FETCH (El nuevo puente de comunicación)
     async function api(action, payload = {}) {
     // Aquí insertamos la URL del proxy delante de tu URL original
-      const PROXY_URL = 'https://corsproxy.io?url=';
+      const PROXY_URL = 'https://corsproxy.io/?url=';
       const FINAL_URL = PROXY_URL + encodeURIComponent(API_URL);
 
       try {
